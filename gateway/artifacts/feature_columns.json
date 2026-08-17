@@ -15,7 +15,8 @@
     "ip_fail_ratio_10s",
     "ip_login_10s",
     "ip_uniq_ep_10s",
-    "ip_distinct_users_10s"
+    "ip_distinct_users_10s",
+    "token_ips_10s"
   ],
   "cat_cols": [
     "method",
@@ -38,6 +39,7 @@
     "ip_login_10s",
     "ip_uniq_ep_10s",
     "ip_distinct_users_10s",
+    "token_ips_10s",
     "method_enc",
     "endpoint_norm_enc"
   ],
@@ -48,6 +50,7 @@
     "credential_stuffing",
     "normal",
     "parameter_tampering",
-    "sql_injection"
+    "sql_injection",
+    "token_replay"
   ]
 }

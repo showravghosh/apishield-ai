@@ -4,6 +4,7 @@ from urllib.parse import unquote_plus
 import json
 import time
 import csv
+import base64
 from collections import deque
 from datetime import datetime, timezone
 
@@ -37,6 +38,7 @@ LABELS = cfg["labels"]
 NORMAL_IDX = LABELS.index("normal")
 
 state = {}
+token_state = {}
 
 app = FastAPI(title="APIShield AI Gateway")
 
@@ -80,6 +82,18 @@ def numeric_features(text):
     return mx, mn, has_neg, t.count(":")
 
 
+def token_subject(auth_header):
+    if not auth_header or not auth_header.lower().startswith("bearer "):
+        return None
+    token = auth_header.split(" ", 1)[1]
+    try:
+        part = token.split(".")[1]
+        part += "=" * (-len(part) % 4)
+        return json.loads(base64.urlsafe_b64decode(part)).get("sub")
+    except Exception:
+        return None
+
+
 def extract(request, body_bytes):
     now = time.time()
     path = request.url.path
@@ -109,13 +123,22 @@ def extract(request, body_bytes):
         users.add(tuser)
     ip_users = len(users)
     ip_fail_ratio = ip_fail / max(ip_req, 1)
+    subject = token_subject(request.headers.get("authorization", ""))
+    if subject:
+        tq = token_state.setdefault(subject, deque())
+        while tq and now - tq[0][0] > WINDOW_SEC:
+            tq.popleft()
+        tq.append((now, ip))
+        token_ips = len(set(x[1] for x in tq))
+    else:
+        token_ips = 0
 
     feats = {
         "request_size": request_size, "hour": hour, "body_len": body_len,
         "body_special": body_special, "body_sql_hits": body_sql, "body_max_num": body_mx, "body_min_num": body_mn, "body_has_neg": body_neg, "body_field_count": body_fc, "is_login": is_login,
         "ip_req_10s": ip_req, "ip_fail_10s": ip_fail, "ip_fail_ratio_10s": ip_fail_ratio,
         "ip_login_10s": ip_login, "ip_uniq_ep_10s": ip_uniq_ep,
-        "ip_distinct_users_10s": ip_users,
+        "ip_distinct_users_10s": ip_users, "token_ips_10s": token_ips,
         "method": request.method, "endpoint_norm": ep_norm,
         "country": request.headers.get("x-country", "unknown"),
         "device": request.headers.get("x-device", "unknown"),
@@ -161,6 +184,8 @@ async def proxy(path: str, request: Request):
         "api_flooding": feats["ip_req_10s"] >= 8,
         "bola": feats["ip_distinct_users_10s"] >= 3,
         "brute_force": feats["ip_fail_10s"] >= 3,
+        "token_replay": feats["token_ips_10s"] >= 4,
+        "credential_stuffing": feats["ip_login_10s"] >= 3,
     }
     if pred in _guards and not _guards[pred]:
         pred = "normal"
@@ -168,6 +193,10 @@ async def proxy(path: str, request: Request):
     decision = decide(pred, risk)
     if feats["body_sql_hits"] >= 3:
         pred = "sql_injection"
+        risk = max(risk, 0.95)
+        decision = "BLOCK"
+    if feats["token_ips_10s"] >= 5:
+        pred = "token_replay"
         risk = max(risk, 0.95)
         decision = "BLOCK"
     log_decision(meta, request.method, pred, risk, decision)
@@ -192,7 +221,8 @@ async def proxy(path: str, request: Request):
     if request.url.query:
         url += "?" + request.url.query
     fwd_headers = {k: v for k, v in request.headers.items()
-                   if k.lower() not in ("host", "content-length")}
+                   if k.lower() not in ("host", "content-length")
+                   and not (k.lower() == "authorization" and v.strip().lower() in ("", "bearer"))}
     async with httpx.AsyncClient() as client:
         r = await client.request(request.method, url, content=body_bytes,
                                  headers=fwd_headers, timeout=30.0)
@@ -204,4 +234,4 @@ async def proxy(path: str, request: Request):
                     media_type=r.headers.get("content-type"),
                     headers={"X-APIShield-Decision": decision,
                              "X-APIShield-Risk": str(round(risk, 3)),
-                             "X-APIShield-Predicted": pred})
+                             "X-APIShield-Predicted": pred, "X-APIShield-Tok": str(int(feats["token_ips_10s"]))})

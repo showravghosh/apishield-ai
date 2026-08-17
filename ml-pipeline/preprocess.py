@@ -101,12 +101,26 @@ def main():
     df["ip_login_10s"] = ip_login
     df["ip_uniq_ep_10s"] = ip_uniq_ep
     df["ip_distinct_users_10s"] = ip_users
+    token_ips = np.zeros(n)
+    state_tok = {}
+    uids = df["user_id"].astype(str).to_numpy()
+    for i in range(n):
+        u = uids[i]
+        if u in ("anon", "invalid_token", "none", "nan"):
+            token_ips[i] = 0
+            continue
+        tq = state_tok.setdefault(u, deque())
+        tq.append((ts[i], ips[i]))
+        while tq and ts[i] - tq[0][0] > WINDOW_SEC:
+            tq.popleft()
+        token_ips[i] = len(set(x[1] for x in tq))
+    df["token_ips_10s"] = token_ips
 
     num_cols = [
         "status_code", "response_time_ms", "request_size", "response_size",
         "hour", "body_len", "body_special", "body_sql_hits", "body_max_num", "body_min_num", "body_has_neg", "body_field_count", "is_error", "is_login",
         "ip_req_10s", "ip_fail_10s", "ip_fail_ratio_10s", "ip_login_10s",
-        "ip_uniq_ep_10s", "ip_distinct_users_10s",
+        "ip_uniq_ep_10s", "ip_distinct_users_10s", "token_ips_10s",
     ]
     cat_cols = ["method", "endpoint_norm", "country", "device"]
 
