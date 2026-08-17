@@ -112,6 +112,17 @@ def view_cart(
     return db.query(models.CartItem).filter(models.CartItem.user_id == current_user.id).all()
 
 
+@app.post("/order", tags=["order"])
+def place_order(order: dict, db: Session = Depends(get_db),
+                current_user: models.User = Depends(auth.get_current_user)):
+    product = db.query(models.Product).filter(models.Product.id == order.get("product_id")).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    quantity = order.get("quantity", 1)
+    total = product.price * quantity
+    return {"message": "Order placed", "total": total}
+
+
 @app.get("/users/{user_id}", response_model=schemas.UserOut, tags=["users"])
 def get_user(
     user_id: int,

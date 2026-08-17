@@ -66,6 +66,20 @@ def enc(col, val):
     return classes.index(val) if val in classes else len(classes)
 
 
+def numeric_features(text):
+    t = unquote_plus(str(text))
+    vals = []
+    for x in re.findall(r"-?\d+\.?\d*", t):
+        try:
+            vals.append(float(x))
+        except ValueError:
+            pass
+    mx = max(vals) if vals else 0.0
+    mn = min(vals) if vals else 0.0
+    has_neg = 1 if any(v < 0 for v in vals) else 0
+    return mx, mn, has_neg, t.count(":")
+
+
 def extract(request, body_bytes):
     now = time.time()
     path = request.url.path
@@ -77,6 +91,7 @@ def extract(request, body_bytes):
 
     body_text = body_bytes.decode("utf-8", "ignore") + " " + query
     body_len, body_special, body_sql = body_features(body_text)
+    body_mx, body_mn, body_neg, body_fc = numeric_features(body_text)
     request_size = len(body_bytes)
     hour = datetime.now(timezone.utc).hour
 
@@ -97,7 +112,7 @@ def extract(request, body_bytes):
 
     feats = {
         "request_size": request_size, "hour": hour, "body_len": body_len,
-        "body_special": body_special, "body_sql_hits": body_sql, "is_login": is_login,
+        "body_special": body_special, "body_sql_hits": body_sql, "body_max_num": body_mx, "body_min_num": body_mn, "body_has_neg": body_neg, "body_field_count": body_fc, "is_login": is_login,
         "ip_req_10s": ip_req, "ip_fail_10s": ip_fail, "ip_fail_ratio_10s": ip_fail_ratio,
         "ip_login_10s": ip_login, "ip_uniq_ep_10s": ip_uniq_ep,
         "ip_distinct_users_10s": ip_users,
@@ -142,6 +157,14 @@ async def proxy(path: str, request: Request):
     body_bytes = await request.body()
     feats, meta = extract(request, body_bytes)
     pred, risk = score(feats)
+    _guards = {
+        "api_flooding": feats["ip_req_10s"] >= 8,
+        "bola": feats["ip_distinct_users_10s"] >= 3,
+        "brute_force": feats["ip_fail_10s"] >= 3,
+    }
+    if pred in _guards and not _guards[pred]:
+        pred = "normal"
+        risk = min(risk, 0.3)
     decision = decide(pred, risk)
     if feats["body_sql_hits"] >= 3:
         pred = "sql_injection"

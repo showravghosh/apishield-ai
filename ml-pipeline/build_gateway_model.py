@@ -34,6 +34,21 @@ def body_features(body):
         sum(1 for k in SQL_KEYWORDS if k in b)
 
 
+
+def numeric_features(text):
+    t = unquote_plus(str(text))
+    vals = []
+    for x in re.findall(r"-?\d+\.?\d*", t):
+        try:
+            vals.append(float(x))
+        except ValueError:
+            pass
+    mx = max(vals) if vals else 0.0
+    mn = min(vals) if vals else 0.0
+    has_neg = 1 if any(v < 0 for v in vals) else 0
+    return mx, mn, has_neg, t.count(":")
+
+
 def main():
     df = pd.read_csv(RAW_CSV).drop_duplicates()
     df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", utc=True)
@@ -46,10 +61,14 @@ def main():
     df["target_user"] = df["endpoint"].apply(target_user)
 
     bl, bs, bh = [], [], []
+    mxs, mns, negs, fcs = [], [], [], []
     for b in df["request_body"]:
         l, s, h = body_features(b)
         bl.append(l); bs.append(s); bh.append(h)
+        mx, mn, ng, fc = numeric_features(b)
+        mxs.append(mx); mns.append(mn); negs.append(ng); fcs.append(fc)
     df["body_len"], df["body_special"], df["body_sql_hits"] = bl, bs, bh
+    df["body_max_num"], df["body_min_num"], df["body_has_neg"], df["body_field_count"] = mxs, mns, negs, fcs
 
     n = len(df)
     ip_req = np.zeros(n); ip_fail = np.zeros(n); ip_login = np.zeros(n)
@@ -75,7 +94,7 @@ def main():
     df["ip_distinct_users_10s"] = ip_users
 
     num_cols = [
-        "request_size", "hour", "body_len", "body_special", "body_sql_hits",
+        "request_size", "hour", "body_len", "body_special", "body_sql_hits", "body_max_num", "body_min_num", "body_has_neg", "body_field_count",
         "is_login", "ip_req_10s", "ip_fail_10s", "ip_fail_ratio_10s",
         "ip_login_10s", "ip_uniq_ep_10s", "ip_distinct_users_10s",
     ]

@@ -19,6 +19,8 @@ def normal_session():
     if not token:
         return
     common.browse_normal(sid, ip, token, uid, rounds=random.randint(3, 8))
+    if random.random() < 0.5:
+        common.place_order(sid, ip, token)
 
 
 def run(n):

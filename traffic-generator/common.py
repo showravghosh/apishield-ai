@@ -73,3 +73,10 @@ def browse_anonymous(sid, ip, rounds=None):
             requests.get(f"{BASE_URL}/search",
                          params={"q": random.choice(SEARCH_TERMS_NORMAL)}, headers=h)
         time.sleep(random.uniform(0.1, 0.4))
+
+
+def place_order(sid, ip, token):
+    h = auth_headers("normal", sid, ip, token)
+    requests.post(f"{BASE_URL}/order",
+                  json={"product_id": random.randint(1, 4),
+                        "quantity": random.randint(1, 3)}, headers=h)

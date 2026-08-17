@@ -6,6 +6,7 @@ import attack_brute_force
 import attack_bola
 import attack_flooding
 import attack_credential_stuffing
+import attack_parameter_tampering
 
 
 def main(scale):
@@ -18,6 +19,7 @@ def main(scale):
     attack_bola.run(scale * 8)
     attack_flooding.run(scale * 4)
     attack_credential_stuffing.run(scale * 30)
+    attack_parameter_tampering.run(scale * 8)
     print("=" * 50)
     print("All traffic generation complete.")
     print("=" * 50)

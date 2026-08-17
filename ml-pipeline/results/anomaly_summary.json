@@ -1,18 +1,20 @@
 {
   "FPR_5pct": {
     "api_flooding": 0.0,
-    "bola": 0.942,
+    "bola": 0.44,
     "brute_force": 1.0,
-    "credential_stuffing": 0.967,
-    "sql_injection": 0.622,
-    "OVERALL": 0.458
+    "credential_stuffing": 0.957,
+    "parameter_tampering": 0.561,
+    "sql_injection": 0.507,
+    "OVERALL": 0.372
   },
   "FPR_10pct": {
-    "api_flooding": 0.079,
-    "bola": 0.993,
+    "api_flooding": 0.012,
+    "bola": 0.949,
     "brute_force": 1.0,
-    "credential_stuffing": 0.987,
-    "sql_injection": 0.765,
-    "OVERALL": 0.519
+    "credential_stuffing": 0.997,
+    "parameter_tampering": 0.937,
+    "sql_injection": 0.697,
+    "OVERALL": 0.49
   }
 }
