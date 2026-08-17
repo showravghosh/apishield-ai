@@ -234,6 +234,8 @@ async def proxy(path: str, request: Request):
         pred, risk, decision = "api_flooding", max(risk, 0.95), "BLOCK"
     if feats["token_ips_10s"] >= 5 or feats["token_ips_60s"] >= 3:
         pred, risk, decision = "token_replay", max(risk, 0.95), "BLOCK"
+    if feats["ip_distinct_users_10s"] >= 5:
+        pred, risk, decision = "bola", max(risk, 0.95), "BLOCK"
 
     log_decision(meta, request.method, pred, risk, decision)
 
