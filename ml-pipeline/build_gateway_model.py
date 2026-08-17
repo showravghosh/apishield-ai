@@ -1,0 +1,123 @@
+import os
+import re
+import json
+from collections import deque
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix, f1_score
+from catboost import CatBoostClassifier
+import joblib
+
+RAW_CSV = "../traffic-generator/dataset/traffic_logs.csv"
+OUT_DIR = "../gateway/artifacts"
+WINDOW_SEC = 10.0
+os.makedirs(OUT_DIR, exist_ok=True)
+
+SQL_KEYWORDS = ["select", "union", "drop", "or ", "'", "--", "#", "=", ";", "sleep"]
+
+
+def normalize_endpoint(path):
+    return re.sub(r"/\d+", "/{id}", str(path))
+
+
+def target_user(path):
+    m = re.match(r"/users/(\d+)", str(path))
+    return m.group(1) if m else None
+
+
+def body_features(body):
+    b = str(body).lower()
+    return len(b), sum(b.count(c) for c in ["'", '"', ";", "-", "=", "#", "(", ")"]), \
+        sum(1 for k in SQL_KEYWORDS if k in b)
+
+
+def main():
+    df = pd.read_csv(RAW_CSV).drop_duplicates()
+    df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", utc=True)
+    df = df.dropna(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
+
+    df["endpoint_norm"] = df["endpoint"].apply(normalize_endpoint)
+    df["hour"] = df["timestamp"].dt.hour
+    df["is_error"] = (df["status_code"] >= 400).astype(int)
+    df["is_login"] = (df["endpoint"] == "/login").astype(int)
+    df["target_user"] = df["endpoint"].apply(target_user)
+
+    bl, bs, bh = [], [], []
+    for b in df["request_body"]:
+        l, s, h = body_features(b)
+        bl.append(l); bs.append(s); bh.append(h)
+    df["body_len"], df["body_special"], df["body_sql_hits"] = bl, bs, bh
+
+    n = len(df)
+    ip_req = np.zeros(n); ip_fail = np.zeros(n); ip_login = np.zeros(n)
+    ip_uniq_ep = np.zeros(n); ip_users = np.zeros(n)
+    state = {}
+    ts = df["timestamp"].astype("int64").to_numpy() / 1e9
+    ips = df["ip_address"].to_numpy(); errs = df["is_error"].to_numpy()
+    logins = df["is_login"].to_numpy(); eps = df["endpoint_norm"].to_numpy()
+    tus = df["target_user"].to_numpy()
+    for i in range(n):
+        dq = state.setdefault(ips[i], deque())
+        dq.append((ts[i], errs[i], logins[i], eps[i], tus[i]))
+        while dq and ts[i] - dq[0][0] > WINDOW_SEC:
+            dq.popleft()
+        ip_req[i] = len(dq)
+        ip_fail[i] = sum(x[1] for x in dq)
+        ip_login[i] = sum(x[2] for x in dq)
+        ip_uniq_ep[i] = len(set(x[3] for x in dq))
+        ip_users[i] = len(set(x[4] for x in dq if x[4] is not None))
+    df["ip_req_10s"] = ip_req; df["ip_fail_10s"] = ip_fail
+    df["ip_fail_ratio_10s"] = ip_fail / np.maximum(ip_req, 1)
+    df["ip_login_10s"] = ip_login; df["ip_uniq_ep_10s"] = ip_uniq_ep
+    df["ip_distinct_users_10s"] = ip_users
+
+    num_cols = [
+        "request_size", "hour", "body_len", "body_special", "body_sql_hits",
+        "is_login", "ip_req_10s", "ip_fail_10s", "ip_fail_ratio_10s",
+        "ip_login_10s", "ip_uniq_ep_10s", "ip_distinct_users_10s",
+    ]
+    cat_cols = ["method", "endpoint_norm", "country", "device"]
+
+    encoders = {}
+    for c in cat_cols:
+        le = LabelEncoder()
+        df[c + "_enc"] = le.fit_transform(df[c].astype(str))
+        encoders[c] = list(le.classes_)
+
+    df[num_cols] = df[num_cols].fillna(0)
+    scaler = StandardScaler()
+    df[num_cols] = scaler.fit_transform(df[num_cols])
+
+    feature_cols = num_cols + [c + "_enc" for c in cat_cols]
+    X = df[feature_cols]; y = df["label"]
+    labels = sorted(y.unique().tolist())
+
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y)
+
+    model = CatBoostClassifier(
+        iterations=400, depth=8, learning_rate=0.1, loss_function="MultiClass",
+        auto_class_weights="Balanced", random_seed=42, verbose=False)
+    model.fit(X_tr, y_tr)
+    preds = np.array(model.predict(X_te)).ravel()
+
+    print("Gateway model (request-time features only)")
+    print("F1(macro):", round(f1_score(y_te, preds, average="macro"), 4))
+    print(classification_report(y_te, preds, labels=labels, zero_division=0))
+    print("labels:", labels)
+    print(confusion_matrix(y_te, preds, labels=labels))
+
+    model.save_model(os.path.join(OUT_DIR, "model.cbm"))
+    joblib.dump(scaler, os.path.join(OUT_DIR, "scaler.pkl"))
+    with open(os.path.join(OUT_DIR, "encoders.json"), "w") as f:
+        json.dump(encoders, f, indent=2)
+    with open(os.path.join(OUT_DIR, "feature_columns.json"), "w") as f:
+        json.dump({"num_cols": num_cols, "cat_cols": cat_cols,
+                   "feature_cols": feature_cols, "labels": labels}, f, indent=2)
+    print("Saved gateway artifacts to", OUT_DIR)
+
+
+if __name__ == "__main__":
+    main()

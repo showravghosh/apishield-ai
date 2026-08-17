@@ -1,0 +1,47 @@
+{
+  "num_cols": [
+    "request_size",
+    "hour",
+    "body_len",
+    "body_special",
+    "body_sql_hits",
+    "is_login",
+    "ip_req_10s",
+    "ip_fail_10s",
+    "ip_fail_ratio_10s",
+    "ip_login_10s",
+    "ip_uniq_ep_10s",
+    "ip_distinct_users_10s"
+  ],
+  "cat_cols": [
+    "method",
+    "endpoint_norm",
+    "country",
+    "device"
+  ],
+  "feature_cols": [
+    "request_size",
+    "hour",
+    "body_len",
+    "body_special",
+    "body_sql_hits",
+    "is_login",
+    "ip_req_10s",
+    "ip_fail_10s",
+    "ip_fail_ratio_10s",
+    "ip_login_10s",
+    "ip_uniq_ep_10s",
+    "ip_distinct_users_10s",
+    "method_enc",
+    "endpoint_norm_enc",
+    "country_enc",
+    "device_enc"
+  ],
+  "labels": [
+    "api_flooding",
+    "bola",
+    "brute_force",
+    "normal",
+    "sql_injection"
+  ]
+}
