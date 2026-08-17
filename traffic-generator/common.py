@@ -4,7 +4,7 @@ import requests
 
 from config import BASE_URL, base_headers, SEARCH_TERMS_NORMAL, fake
 
-EXISTING_IDS = [1, 2, 3]
+EXISTING_IDS = list(range(1, 26))
 
 
 def make_ip():
@@ -47,7 +47,7 @@ def browse_normal(sid, ip, token, uid, rounds=None, fast=False):
         rounds = random.randint(2, 6)
     for _ in range(rounds):
         action = random.choice(
-            ["list", "view", "search", "profile", "profile",
+            ["list", "view", "search", "profile", "view_other",
              "view_other", "cart_add", "cart_view"])
         h = auth_headers("normal", sid, ip, token)
         if action == "list":
