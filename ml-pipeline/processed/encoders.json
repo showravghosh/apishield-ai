@@ -22,13 +22,11 @@
     "IN",
     "NG",
     "RU",
-    "US",
-    "unknown"
+    "US"
   ],
   "device": [
     "desktop",
     "mobile",
-    "tablet",
-    "unknown"
+    "tablet"
   ]
 }

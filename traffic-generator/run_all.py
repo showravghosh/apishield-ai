@@ -5,6 +5,7 @@ import attack_sql_injection
 import attack_brute_force
 import attack_bola
 import attack_flooding
+import attack_credential_stuffing
 
 
 def main(scale):
@@ -16,6 +17,7 @@ def main(scale):
     attack_brute_force.run(scale * 8)
     attack_bola.run(scale * 8)
     attack_flooding.run(scale * 4)
+    attack_credential_stuffing.run(scale * 30)
     print("=" * 50)
     print("All traffic generation complete.")
     print("=" * 50)

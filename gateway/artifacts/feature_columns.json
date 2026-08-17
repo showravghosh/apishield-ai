@@ -37,6 +37,7 @@
     "api_flooding",
     "bola",
     "brute_force",
+    "credential_stuffing",
     "normal",
     "sql_injection"
   ]
