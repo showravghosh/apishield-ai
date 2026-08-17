@@ -11,22 +11,5 @@
     "/products/{id}",
     "/search",
     "/users/{id}"
-  ],
-  "country": [
-    "BD",
-    "BR",
-    "CN",
-    "DE",
-    "FR",
-    "GB",
-    "IN",
-    "NG",
-    "RU",
-    "US"
-  ],
-  "device": [
-    "desktop",
-    "mobile",
-    "tablet"
   ]
 }

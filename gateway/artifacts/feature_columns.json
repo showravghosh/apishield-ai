@@ -15,9 +15,7 @@
   ],
   "cat_cols": [
     "method",
-    "endpoint_norm",
-    "country",
-    "device"
+    "endpoint_norm"
   ],
   "feature_cols": [
     "request_size",
@@ -33,9 +31,7 @@
     "ip_uniq_ep_10s",
     "ip_distinct_users_10s",
     "method_enc",
-    "endpoint_norm_enc",
-    "country_enc",
-    "device_enc"
+    "endpoint_norm_enc"
   ],
   "labels": [
     "api_flooding",

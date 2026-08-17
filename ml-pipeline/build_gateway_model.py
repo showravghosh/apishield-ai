@@ -1,5 +1,6 @@
 import os
 import re
+from urllib.parse import unquote_plus
 import json
 from collections import deque
 import numpy as np
@@ -28,7 +29,7 @@ def target_user(path):
 
 
 def body_features(body):
-    b = str(body).lower()
+    b = unquote_plus(str(body)).lower()
     return len(b), sum(b.count(c) for c in ["'", '"', ";", "-", "=", "#", "(", ")"]), \
         sum(1 for k in SQL_KEYWORDS if k in b)
 
@@ -78,7 +79,7 @@ def main():
         "is_login", "ip_req_10s", "ip_fail_10s", "ip_fail_ratio_10s",
         "ip_login_10s", "ip_uniq_ep_10s", "ip_distinct_users_10s",
     ]
-    cat_cols = ["method", "endpoint_norm", "country", "device"]
+    cat_cols = ["method", "endpoint_norm"]
 
     encoders = {}
     for c in cat_cols:

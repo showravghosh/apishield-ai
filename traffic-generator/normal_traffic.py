@@ -6,9 +6,14 @@ import common
 
 
 def normal_session():
-    user = random.choice(SEED_USERS)
     sid = new_session_id()
     ip = common.make_ip()
+
+    if random.random() < 0.4:
+        common.browse_anonymous(sid, ip, rounds=random.randint(2, 6))
+        return
+
+    user = random.choice(SEED_USERS)
     common.maybe_failed_login(user, sid, ip)
     token, uid = common.login(user, "normal", sid, ip)
     if not token:

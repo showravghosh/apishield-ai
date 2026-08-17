@@ -1,5 +1,6 @@
 import os
 import re
+from urllib.parse import unquote_plus
 import json
 import time
 import csv
@@ -55,7 +56,7 @@ def target_user(path):
 
 
 def body_features(text):
-    b = str(text).lower()
+    b = unquote_plus(str(text)).lower()
     return len(b), sum(b.count(c) for c in ["'", '"', ";", "-", "=", "#", "(", ")"]), \
         sum(1 for k in SQL_KEYWORDS if k in b)
 
@@ -142,6 +143,10 @@ async def proxy(path: str, request: Request):
     feats, meta = extract(request, body_bytes)
     pred, risk = score(feats)
     decision = decide(pred, risk)
+    if feats["body_sql_hits"] >= 3:
+        pred = "sql_injection"
+        risk = max(risk, 0.95)
+        decision = "BLOCK"
     log_decision(meta, request.method, pred, risk, decision)
 
     if decision == "BLOCK":

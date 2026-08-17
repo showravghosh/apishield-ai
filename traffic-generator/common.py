@@ -57,3 +57,19 @@ def browse_normal(sid, ip, token, uid, rounds=None):
         elif action == "cart_view":
             requests.get(f"{BASE_URL}/cart", headers=h)
         time.sleep(random.uniform(0.05, 0.25))
+
+
+def browse_anonymous(sid, ip, rounds=None):
+    if rounds is None:
+        rounds = random.randint(2, 6)
+    for _ in range(rounds):
+        action = random.choice(["list", "view", "search", "search", "view"])
+        h = base_headers("normal", sid, ip=ip)
+        if action == "list":
+            requests.get(f"{BASE_URL}/products", headers=h)
+        elif action == "view":
+            requests.get(f"{BASE_URL}/products/{random.randint(1, 4)}", headers=h)
+        elif action == "search":
+            requests.get(f"{BASE_URL}/search",
+                         params={"q": random.choice(SEARCH_TERMS_NORMAL)}, headers=h)
+        time.sleep(random.uniform(0.1, 0.4))

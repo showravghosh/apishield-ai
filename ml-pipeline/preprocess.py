@@ -1,5 +1,6 @@
 import os
 import re
+from urllib.parse import unquote_plus
 import json
 from collections import deque
 import pandas as pd
@@ -25,7 +26,7 @@ def target_user(path):
 
 
 def body_features(body):
-    b = str(body).lower()
+    b = unquote_plus(str(body)).lower()
     length = len(b)
     special = sum(b.count(c) for c in ["'", '"', ";", "-", "=", "#", "(", ")"])
     sql_hits = sum(1 for k in SQL_KEYWORDS if k in b)
