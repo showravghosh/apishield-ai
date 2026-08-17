@@ -1,0 +1,16 @@
+{
+  "FPR_5pct": {
+    "api_flooding": 0.0,
+    "bola": 0.014,
+    "brute_force": 1.0,
+    "sql_injection": 0.519,
+    "OVERALL": 0.265
+  },
+  "FPR_10pct": {
+    "api_flooding": 0.0,
+    "bola": 0.764,
+    "brute_force": 1.0,
+    "sql_injection": 0.758,
+    "OVERALL": 0.398
+  }
+}
