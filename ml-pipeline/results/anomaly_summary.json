@@ -1,22 +1,22 @@
 {
   "FPR_5pct": {
     "api_flooding": 0.0,
-    "bola": 0.664,
-    "brute_force": 1.0,
-    "credential_stuffing": 0.92,
-    "parameter_tampering": 0.558,
-    "sql_injection": 0.744,
+    "bola": 0.013,
+    "brute_force": 0.99,
+    "credential_stuffing": 0.937,
+    "parameter_tampering": 0.353,
+    "sql_injection": 0.449,
     "token_replay": 0.0,
-    "OVERALL": 0.377
+    "OVERALL": 0.281
   },
   "FPR_10pct": {
     "api_flooding": 0.0,
-    "bola": 0.958,
-    "brute_force": 1.0,
-    "credential_stuffing": 0.923,
-    "parameter_tampering": 0.909,
-    "sql_injection": 0.771,
-    "token_replay": 0.016,
-    "OVERALL": 0.439
+    "bola": 0.571,
+    "brute_force": 0.992,
+    "credential_stuffing": 0.937,
+    "parameter_tampering": 0.901,
+    "sql_injection": 0.738,
+    "token_replay": 0.015,
+    "OVERALL": 0.423
   }
 }

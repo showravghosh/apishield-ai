@@ -15,13 +15,13 @@ def bola_session():
     if not token:
         return
     common.browse_normal(sid, ip, token, uid, rounds=random.randint(1, 3))
-    for _ in range(random.randint(4, 10)):
-        victim = random.randint(1, 50)
+    for _ in range(random.randint(3, 8)):
+        victim = random.randint(1, 15)
         if victim == uid:
             victim += 1
         h = common.auth_headers("bola", sid, ip, token)
         requests.get(f"{BASE_URL}/users/{victim}", headers=h)
-        time.sleep(random.uniform(0.02, 0.1))
+        time.sleep(random.uniform(0.05, 0.2))
 
 
 def run(n):

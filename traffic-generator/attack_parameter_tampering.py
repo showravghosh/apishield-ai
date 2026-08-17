@@ -17,11 +17,12 @@ def pt_session():
     for _ in range(random.randint(3, 7)):
         h = common.auth_headers("parameter_tampering", sid, ip, token)
         tamper = random.choice([
+            {"product_id": random.randint(1, 4), "quantity": random.randint(20, 100)},
             {"product_id": random.randint(1, 4), "quantity": -random.randint(1, 10)},
             {"product_id": random.randint(1, 4), "quantity": random.randint(10000, 999999)},
-            {"product_id": random.randint(1, 4), "quantity": 1, "unit_price": 1},
-            {"product_id": random.randint(9999, 99999), "quantity": 1},
-            {"product_id": random.randint(1, 4), "quantity": 1, "discount": 100, "admin": True},
+            {"product_id": random.randint(1, 4), "quantity": 1, "unit_price": random.randint(1, 50)},
+            {"product_id": random.randint(5, 20), "quantity": 1},
+            {"product_id": random.randint(1, 4), "quantity": 2, "discount": random.randint(10, 90)},
         ])
         requests.post(f"{BASE_URL}/order", json=tamper, headers=h)
 
