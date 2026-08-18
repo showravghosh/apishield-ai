@@ -92,14 +92,21 @@ def dashboard():
     blocked = dec.get("BLOCK", 0)
     limited = dec.get("RATE_LIMIT", 0)
 
-    last = rows[-60:]
-    atk = sum(1 for r in last if r["decision"] in ("BLOCK", "RATE_LIMIT"))
-    ratio = atk / len(last) if last else 0
-    if ratio >= 0.5:
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    recent_atk = 0
+    for r in rows[-300:]:
+        try:
+            t = datetime.fromisoformat(r["timestamp"])
+            if now - t <= timedelta(seconds=30) and r["decision"] in ("BLOCK", "RATE_LIMIT"):
+                recent_atk += 1
+        except Exception:
+            pass
+    if recent_atk >= 15:
         level, lc = "CRITICAL", "#ef4444"
-    elif ratio >= 0.25:
+    elif recent_atk >= 5:
         level, lc = "HIGH", "#f97316"
-    elif ratio > 0:
+    elif recent_atk >= 1:
         level, lc = "ELEVATED", "#f59e0b"
     else:
         level, lc = "LOW", "#22c55e"
